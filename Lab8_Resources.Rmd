@@ -1,0 +1,248 @@
+---
+title: 'Stats 250: Lab 8 Resources'
+author: "Instructional Team"
+date: '`r Sys.Date()`'
+geometry: margin=0.50in
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+## Learning Objectives
+
+1. Visualize the relationship of two quantitative variables
+2. Quantify the strength of the relationship of two quantitative variables
+3. Compute the estimated regression model
+4. Interpret the (multiple) R-squared value
+5. Create confidence intervals for the true but unknown slope
+6. Run hypothesis tests for the true but unknown slope
+
+
+***
+
+
+## Overview - Linear Regression
+
+Linear regression can be used when we wish to study the relationship (or association) between two quantitative variables. One variable will act as the response variable (denoted by Y) and the other variable will act as the explanatory variable (denoted by X). The response variable measures the outcome of the study and is also called the dependent variable. The explanatory variable is thought to explain the changes we see in the response variable and is also called the independent variable or the predictor variable. 
+
+When analyzing the linear relationship between a predictor and the response, we are typically most interested in the value of the estimated slope. This value estimates the expected change in the response for a 1-unit change in the value of the predictor. 
+
+We can use this estimate to provide a range of reasonable values for the true, but unknown slope (using a confidence interval) - or we can use this estimate to evaluate claims made about the true, but unknown slope (using a hypothesis test). 
+
+
+***
+
+
+## Load Packages
+
+Before we get started, be sure to load the following packages. 
+
+```{r load_packages, message = FALSE, warning = FALSE}
+library(ggplot2)
+```
+
+
+\newpage
+
+
+## Data
+
+In today's lab tutorial, we will be utilizing a subset of the penguins data set - one that includes only Gentoo penguins. Run the code chunk below to load the data set into our working environment.
+
+```{r read_gentoo}
+gentoo <- read.csv("gentoo.csv")
+```
+
+```{r preview_gentoo}
+head(gentoo)
+```
+
+This data set only includes Gentoo penguins (a sample of 119 penguins to be exact).
+
+**Analysis Goal:** With this data, we will analyze the linear relationship between body mass (Y) and flipper length (X).
+
+
+\newpage
+
+
+## Scatterplots
+
+The first step in analyzing the relationship of two quantitative variables is to visualize the relationship. We look to comment on four key aspects:
+
+1. Strength: is there a clear (strong) pattern or is one not obvious (weak)?
+2. Direction: is the relationship positive or negative?
+3. Linearity: is the overall pattern a straight line? Or does it exhibit a curve?
+4. Outliers: are there any observations that clearly deviate from the overall pattern? 
+
+
+To create a scatterplot for body mass (Y) and flipper length (X), we would use the following code: 
+
+```{r scatterplot_example}
+ggplot(data = gentoo, aes(x = flipper_length_mm, y = body_mass_g)) + 
+  
+  geom_point() + 
+  
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  
+  labs(title = "Scatterplot of Body Mass vs Flipper Length",
+       x = "Flipper Length (in mm)",
+       y = "Body Mass (in g)")
+```
+
+Note: it is general convention to title a scatterplot using the format "Y versus X".
+
+Commenting on the four key aspects of the plot...there appears to be a strong (or moderately strong) linear relationship between flipper length and body mass. The direction of the relationship is positive and there are no obvious outliers. 
+
+
+**Note about Outliers:** Outliers are observations that do not follow the overall pattern of the data. We should pay closer attention to these observations and consider *why* they deviate. Unlike a boxplot, R does not explicitly call out outliers in a scatterplot - so they can be harder to identify (without additional analyses). In the plot above, one might consider the observation at the top of the plot (with a flipper length of 221 millimeters and a body mass of 6300 grams) a *potential* outlier - as it deviates more from the overall pattern. None of the observations, however, notably deviate from the overall pattern - so none of the observations seem to be obvious areas of concern.
+
+
+\newpage
+
+
+## Correlation
+
+Correlation (notated as r) quantifies the strength of a linear relationship between two quantitative variables. 
+
+- Correlation can take on values between -1 and 1
+- The sign indicates the direction (positive or negative) 
+- The magnitude indicates the strength (weak, moderate, or strong). 
+
+We can calculate the correlation between two variables using the `cor()` function.
+
+```{r correlation_example}
+cor(gentoo$flipper_length_mm, gentoo$body_mass_g)
+```
+
+Note: for this computation, the order of the variables does not matter!
+
+
+\newpage
+
+
+## Estimating the Regression Equation
+
+The regression line for a sample is given as: yhat = betahat0 + betahat1(x) where...
+
+- betahat0 is the estimate of the y-intercept
+- betahat1 is the estimate of the slope
+- yhat is the predicted value of the response (given some value of x)
+- x is the value of the explanatory variable
+
+To compute the estimates of the intercept and slope, we create and store a linear model using the `lm()` function and then pass this model through the `summary()` function. The code would look like this: 
+
+```{r linear_model_example}
+lm_gentoo <- lm(body_mass_g ~ flipper_length_mm, data = gentoo)
+```
+
+```{r summary_example}
+summary(lm_gentoo)
+```
+
+When creating the linear model, **the order of the variables matters!** The response variable must go first, followed by a tilde (`~`), followed by the predictor.  
+
+***
+
+In the above output, betahat0 = -6674.204 and betahat1 = 54.165. The estimated regression equation could be written as either option below:
+
+1. yhat = -6674.204 + 54.165x
+2. predicted body mass = -6674.204 + 54.165(flipper length)
+
+***
+
+How do we interpret the slope estimate (54.165) in context? 
+
+For a 1-millimeter increase in flipper length, we expect an increase of 54.165 grams in the mass of a Gentoo penguin, on average.   
+
+
+\newpage
+
+
+## R-Squared
+
+The `summary()` output provides us with a lot of additional information. One additional piece of information that helps us summarize the strength of our model is the value of R-squared. 
+
+```{r R_squared_example}
+summary(lm_gentoo)
+```
+
+In the output above, the value of R-squared is 0.506. Note: the value is listed as "Multiple R-squared". 
+
+***
+
+How do we interpret the (multiple) R-squared value (0.506) within context? 
+
+For Gentoo penguins, about 50.6% of the variation in body mass is explained by the linear relationship with flipper length. 
+
+
+\newpage
+
+
+## Confidence Intervals for the Population-Level Slope
+
+While the value of 54.165 is our best estimate of the true but unknown slope, we know that this estimate will not be perfect. Therefore, instead of providing a single value to estimate the population-level slope, we can provide a range of reasonable values for the unknown parameter. This range of reasonable values is known as a confidence interval.
+
+To create a confidence interval for the slope, our code would look like this:
+
+```{r confidence_interval_example}
+confint(lm_gentoo, level = 0.95)
+```
+
+While this output is a little tricky to read, the interval corresponding to the slope will be found in the *second row of output*. Note: the first row of the output provides a 95% confidence interval for the intercept. We will not use this output.
+
+***
+
+How do we interpret the range of 44.36556 to 63.96528?
+
+With 95% confidence, for Gentoo penguins, we estimate that the true but unknown slope for the linear relationship between body mass and flipper length falls between 44.36556 and 63.96528. 
+
+In other words, for a 1-millimeter increase in flipper length, we are 95% confident that the body mass of a Gentoo penguin would increase between 44.36556 grams and 63.96528 grams, on average.
+
+***
+
+Think About It: what is the value of the midpoint of this interval? What would be the appropriate symbol for this value? 
+
+
+\newpage
+
+
+## Hypothesis Tests for the Slope
+
+To assess if a linear relationship exists between the response variable and the predictor variable, we can run a hypothesis test for the population-level slope.
+
+- H0: beta1 = 0
+- Ha: beta1 =/ 0
+
+The output of this test is already included in the `summary()` output from earlier!
+
+```{r hypothesis_test_for_the_slope}
+summary(lm_gentoo)
+```
+
+We find a t-test statistic of 10.946 and a corresponding p-value of <2e-16 (or a value smaller than 0.0000000000000002). Therefore, our p-value provides very strong evidence against the null and in favor of the alternative.
+
+**Conclusion:** The data provide very strong evidence to suggest that, for Gentoo penguins, the true but unknown slope for the linear relationship between body mass and flipper length is different than 0. (Or...to suggest that, for Gentoo penguins, a linear relationship exists between body mass and flipper length.)
+
+***
+
+**Important Note:** By default, R runs a two-sided hypothesis test (i.e., the alternative hypothesis is "not equal to"). If we wanted to run a one-sided hypothesis test (such as Ha: beta1 > 0), we would need to halve the p-value. 
+
+
+\newpage
+
+
+## Lecture Summary and Lab Assignment
+
+Refer to Lecture 16 and 17 for additional information on linear regression. You can find the lecture summaries for this topic in your Lab 8 Files.  
+
+Click on the file titled `Lab8_Assignment.Rmd` in the bottom right window to open up the assignment for today.
+
+
+
